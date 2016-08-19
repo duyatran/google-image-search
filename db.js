@@ -25,7 +25,7 @@ exports.getURL = function(shortcut, cb) {
   var sql = 'SELECT url FROM urls WHERE id = $1';
   query(sql, [shortcut], function(err, result) {
     if (err) return cb(err);
-    cb(null, result.rows[0].url);
+    cb(null, result.rows);
   });
 };
 
