@@ -1,7 +1,8 @@
 var pg = require('pg');
-var DATABASE_URL = 'postgres://postgres:dollar112@localhost:5432/freecodecamp';
+var DATABASE_URL = process.env.DATABASE_URL || 'postgres://postgres:dollar112@localhost:5432/freecodecamp';
 
 function query(sql, params, cb) {
+  pg.defaults.ssl = true;
   pg.connect(DATABASE_URL, function(err, client, done) {
     if (err) {
       done();
