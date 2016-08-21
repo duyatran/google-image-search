@@ -1,5 +1,6 @@
 var pg = require('pg');
-var DATABASE_URL = process.env.DATABASE_URL || 'postgres://postgres:dollar112@localhost:5432/freecodecamp';
+var config = require('./config');
+var DATABASE_URL = process.env.DATABASE_URL || config.DB_URL; 
 
 function query(sql, params, cb) {
   pg.defaults.ssl = true;
@@ -13,20 +14,21 @@ function query(sql, params, cb) {
     });
 }
 
-exports.insert = function(long_url, cb) {
-  var sql = 'INSERT INTO urls(url) VALUES($1) RETURNING id';
-  query(sql, [long_url], function(err, result) {
+function insertQuery(keyword, timestamp, cb) {
+  var sql = 'INSERT INTO search_terms(term, time) VALUES($1, $2)';
+  query(sql, [keyword, timestamp], function(err, result) {
     if (err) return cb(err);  
-    cb(null, result.rows[0].id);
+    cb(null, result);
   });
-};
+}
 
-exports.getURL = function(shortcut, cb) {
-  console.log(shortcut + " " + typeof(shortcut));
-  var sql = 'SELECT url FROM urls WHERE id = $1';
-  query(sql, [shortcut], function(err, result) {
+function getLatest(cb) {
+  var sql = 'SELECT term, time FROM search_terms ORDER BY time DESC LIMIT 10';
+  query(sql, [], function(err, result) {
     if (err) return cb(err);
     cb(null, result.rows);
   });
-};
+}
 
+exports.insertQuery = insertQuery;
+exports.getLatest = getLatest;

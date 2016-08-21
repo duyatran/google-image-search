@@ -1,39 +1,63 @@
 var express = require('express');
-var app = express();
 var path = require('path');
 var db = require('./db');
-var helpers = require('./helpers');
+var https = require('https');
+var url = require('url', true);
+var config = require('./config');
 
+var app = express();
 app.use(express.static(path.join(__dirname, 'public')));        
+
 app.get('/', function(req, res){
   res.sendFile(path.join(__dirname + '/index.html'));
 });
 
-app.get(/new\/(.+)/, function(req, res) {
-  var long_url = req.params[0];
-  console.log(long_url);
-  db.insert(long_url, function(err, current_ID){
+app.get('/api/imagesearch/:keyword(*)', function(req, response) {
+  var timestamp = new Date();
+  var temp = Number(req.query.offset);
+  var q = {
+    key: config.API_KEY,
+    cx: config.API_CX,
+    keyword: req.params.keyword,
+    start: temp !== temp ? 1 : 1 + temp
+  };
+    
+  db.insertQuery(q.keyword, timestamp, function(err, output){
     if (err) throw err;
-
-    var short_url = req.protocol + '://' + req.get('host') + '/' +  helpers.encode(current_ID).toString(); 
-    var output = {"original_url" : long_url, "short_url": short_url};
-    res.json(output);
   });
+  
+  var searchAPI = `https://www.googleapis.com/customsearch/v1?key=${q.key}&cx=${q.cx}&searchType=image&fields=items(link, snippet, image/thumbnailLink, image/contextLink)&q=${q.keyword}&start=${q.start}`;
+  
+  https.get(searchAPI, (res) => {
+    var buffer = [];
+    res.on('data', (d) => {
+      buffer.push(d);
+    }).on('end', function() {
+      var body = JSON.parse(Buffer.concat(buffer));
+      var output = [];
+      var anImage;
+      body.items.forEach(function(result) {
+          anImage = {};
+          anImage.url = result.link;
+          anImage.snippet = result.snippet;
+          anImage.thumbnail = result.image.thumpnailLink;
+          anImage.context = result.image.contextLink;
+          output.push(anImage);
+      });
+      response.json(output);
+    });
+
+  }).on('error', (e) => {
+    console.error(e);
+  });
+
+  
 });
 
-app.get('/:shortcut', function(req, res) {
-  console.log(req.params.shortcut);
-  var index = helpers.decode(req.params.shortcut);
-  console.log("index is " + index);
-  db.getURL(index, function(err, result) {
+app.get('/api/latest/imagesearch', function(req, res) {
+  db.getLatest(function(err, result) {
     if (err) throw err;
-    if (result.length == 0) {
-      var error = {error: "There is no such URL, you sure didn't mistype it?"};
-      res.json(error);
-    }
-    else {
-    res.redirect(302, result[0].url);
-    }
+    res.json(result);
   });
 });
 
