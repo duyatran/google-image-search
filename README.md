@@ -1,1 +1,1 @@
-Deployed at https://obscure-oasis-78905.herokuapp.com/. Implemented with Express and PostgreSQL. The app used the base-64 encoding/decoding algorithm from http://stackoverflow.com/questions/742013/how-to-code-a-url-shortener.
+Deployed at https://safe-headland-41754.herokuapp.com/. Implemented with Express, PostgreSQL, and Google Custom Search API.
